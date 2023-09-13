@@ -1,0 +1,63 @@
+---
+title: "Target PCA"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r}
+library(MASS)
+library(panelView)
+```
+
+
+
+# Simulation data
+
+```{r}
+Nx = Ny = T = 200
+sigma_x = 16
+sigma_y = 4
+
+Ft = rep(1, Ny)%x%mvrnorm(T, c(0,0), diag(2))
+Lamy = mvrnorm(Ny, c(0,0), diag(2))%x%rep(1, Ny)
+Lamx = mvrnorm(Nx, c(0,0), diag(2))%x%rep(1, Ny)
+
+
+Ft = mvrnorm(T, c(0,0), diag(2))
+Lamy = mvrnorm(Ny, c(0,0), diag(2))
+Lamx = mvrnorm(Nx, c(0,0), diag(2))
+
+ex = rnorm(Nx*T, 0, sigma_x)
+ey = rnorm(Ny*T, 0, sigma_y)
+
+d_rep  = data.frame(period = rep(1, Nx)%x%(1:T),
+                    unit = (1:Nx)%x%rep(1, T),
+                    X = c(t(Ft%*%t(Lamx))) + ex,
+                    Yinit = c(t(Ft%*%t(Lamy))) + ey)
+
+d_rep$Ylowfreq = d_rep$Yinit
+d_rep$Ylowfreq[d_rep$unit%in%(2*(1:(Nx/2))-1)] = NA
+d_rep$Ylowfreq[d_rep$period%in%(2*(1:(T/2))-1)] = NA
+
+
+panelview(d_rep,
+          Y="X",
+          index=c("unit","period"),
+          type="missing",
+          leave.gap=TRUE)
+
+panelview(d_rep,
+          Y="Ylowfreq",
+          index=c("unit","period"),
+          type="missing",
+          leave.gap=TRUE)
+
+
+```
+
+
+
+
+
+
