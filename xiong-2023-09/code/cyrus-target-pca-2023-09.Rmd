@@ -39,7 +39,11 @@ d_rep  = data.frame(period = rep(1, Nx)%x%(1:T),
 d_rep$Ylowfreq = d_rep$Yinit
 d_rep$Ylowfreq[d_rep$unit%in%(2*(1:(Nx/2))-1)] = NA
 d_rep$Ylowfreq[d_rep$period%in%(2*(1:(T/2))-1)] = NA
+```
 
+## Visualize
+
+```{r}
 
 panelview(d_rep,
           Y="X",
@@ -56,8 +60,25 @@ panelview(d_rep,
 
 ```
 
+# PCA on Complete Data
 
 
+## Form into time by unit matrix
 
+```{r}
+
+Xmat = matrix(d_rep$X, nrow = T, ncol = Nx)
+
+```
+
+$X$ specific factor model is 
+$$
+\underbrace{X}_{T \times N_x} = \underbrace{F_x}_{T \times k_x} \underbrace{\Lambda_x'}_{k_x \times N_x} + \underbrace{e_x}_{T \times N_x},
+$$
+where $F_x$ are orthogonal time-specific factors with non-zero unit-specific loadings in $\Lambda_x$.
+
+```{r}
+Xmat_s = scale(Xmat)
+```
 
 
