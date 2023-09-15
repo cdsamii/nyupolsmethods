@@ -10,8 +10,6 @@ library(MASS)
 library(panelView)
 ```
 
-
-
 # Simulation data
 
 ```{r}
@@ -23,7 +21,6 @@ Ft = rep(1, Ny)%x%mvrnorm(T, c(0,0), diag(2))
 Lamy = mvrnorm(Ny, c(0,0), diag(2))%x%rep(1, Ny)
 Lamx = mvrnorm(Nx, c(0,0), diag(2))%x%rep(1, Ny)
 
-
 Ft = mvrnorm(T, c(0,0), diag(2))
 Lamy = mvrnorm(Ny, c(0,0), diag(2))
 Lamx = mvrnorm(Nx, c(0,0), diag(2))
@@ -31,66 +28,77 @@ Lamx = mvrnorm(Nx, c(0,0), diag(2))
 ex = rnorm(Nx*T, 0, sigma_x)
 ey = rnorm(Ny*T, 0, sigma_y)
 
-d_rep  = data.frame(period = rep(1, Nx)%x%(1:T),
-                    unit = (1:Nx)%x%rep(1, T),
-                    X = c(t(Ft%*%t(Lamx))) + ex,
-                    Y = c(t(Ft%*%t(Lamy))) + ey)
+ex_mat <- matrix(ex, nrow = T, ncol = Nx)
+ey_mat <- matrix(ey, nrow = T, ncol = Ny)
 
-d_rep$Ylowfreq = d_rep$Yinit
-d_rep$Ylowfreq[d_rep$unit%in%(2*(1:(Nx/2))-1)] = NA
-d_rep$Ylowfreq[d_rep$period%in%(2*(1:(T/2))-1)] = NA
+
+Y <- Ft %*% t(Lamy) + ey_mat
+X <- Ft %*% t(Lamx) + ex_mat
 ```
 
-## Visualize
+# No missing data case
+
+```{r}
+gamma <-1
+
+Lambda_gamma <- rbind(Lamx, sqrt(gamma) * Lamy)
+e_gamma <- cbind(ex_mat, sqrt(gamma) * ey_mat)
+
+Z <- Ft %*% t(Lambda_gamma) + e_gamma
+
+ZtZ <- t(Z) %*% Z
+
+pca_result <- prcomp(ZtZ, scale. = TRUE)
+summary(pca_result)
+
+
+pca_result2 <- princomp(ZtZ, cor = TRUE,
+                        scores = TRUE)
+
+
+pca_result2 <- princomp(ZtZ, cor = TRUE,
+                        scores = TRUE)
+
+
+pca_result2$scores
+
+
+summary(pca_result)
+
+summary(pca_result2)
+
+Lambda = pca_result$rotation[1:2,]
+
+
+
+
+
+```
+
+# Missingness pattern (b)
 
 ```{r}
 
-panelview(d_rep,
-          Y="X",
-          index=c("unit","period"),
-          type="missing",
-          leave.gap=TRUE)
+Ylowfreq = Y
+Ylowfreq[2*(1:(T/2))-1,] = NA
 
-panelview(d_rep,
-          Y="Ylowfreq",
-          index=c("unit","period"),
-          type="missing",
-          leave.gap=TRUE)
+Yobs = Ylowfreq[2*(1:(T/2)),]
+Xobs = X[2*(1:(T/2)),]
 
+Zobs = cbind(Xobs, sqrt(gamma)*Yobs)
+Zobs_s = scale(Zobs)
+Sigma_obs = t(Zobs_s)%*%Zobs_s
+pca_obs = princomp(Sigma_obs)
 
-```
-
-# Complete Data Case
+pca_obs$scores
 
 
-## Form into time by unit matrix
-
-```{r}
-
-Xmat = matrix(d_rep$X, nrow = T, ncol = Nx)
-Ymat = matrix(d_rep$Y, nrow = T, ncol = Ny)
 
 
-```
+summary(pca_obs)
 
-$X$ specific factor model is 
-$$
-\underbrace{X}_{T \times N_x} = \underbrace{F_x}_{T \times k_x} \underbrace{\Lambda_x'}_{k_x \times N_x} + \underbrace{e_x}_{T \times N_x},
-$$
-where $F_x$ are orthogonal time-specific factors with non-zero unit-specific loadings in $\Lambda_x$.
+Lambda = pca_obs$rotation[1:2,]
 
-Similar for $Y$.
-
-## Construct the $Z^{(\gamma)}$ matrix with $gamma = 1$
-
-```{r}
-pargamma = 1
-Zmat = cbind(Xmat, pargamma*Ymat)
-ZTZ = t(Zmat)%*%Zmat
-pca_Z = prcomp(ZTZ, center = TRUE, scale = TRUE)
-
-summary(pca_Z)
-pca_Z$rotation
 
 
 
