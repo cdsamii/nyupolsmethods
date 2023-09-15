@@ -1,0 +1,109 @@
+---
+title: "Target PCA"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r}
+library(MASS)
+library(panelView)
+```
+
+
+
+# Simulation data
+
+```{r}
+Nx = Ny = T = 200
+sigma_x = 1
+sigma_y = 1
+
+Ft = rep(1, Ny)%x%mvrnorm(T, c(0,0), diag(2))
+Lamy = mvrnorm(Ny, c(0,0), diag(2))%x%rep(1, Ny)
+Lamx = mvrnorm(Nx, c(0,0), diag(2))%x%rep(1, Ny)
+
+
+Ft = mvrnorm(T, c(0,0), diag(2))
+Lamy = mvrnorm(Ny, c(0,0), diag(2))
+Lamx = mvrnorm(Nx, c(0,0), diag(2))
+
+ex = rnorm(Nx*T, 0, sigma_x)
+ey = rnorm(Ny*T, 0, sigma_y)
+
+# by default
+gamma <-1
+
+
+ex_mat <- matrix(ex, nrow = T, ncol = Nx)
+ey_mat <- matrix(ey, nrow = T, ncol = Ny)
+
+
+Y <- Ft %*% t(Lamy) + ey_mat
+X <- Ft %*% t(Lamx) + ex_mat
+
+Lambda_gamma <- rbind(Lamx, sqrt(gamma) * Lamy)
+e_gamma <- cbind(ex_mat, sqrt(gamma) * ey_mat)
+
+Z <- Ft %*% t(Lambda_gamma) + e_gamma
+
+ZtZ <- t(Z) %*% Z
+
+
+
+pca_result <- prcomp(ZtZ, scale. = TRUE)
+summary(pca_result)
+
+
+
+d_rep  = data.frame(period = rep(1, Nx)%x%(1:T),
+                    unit = (1:Nx)%x%rep(1, T),
+                    X = c(t(Ft%*%t(Lamx))) + ex,
+                    Yinit = c(t(Ft%*%t(Lamy))) + ey)
+
+d_rep$Ylowfreq = d_rep$Yinit
+d_rep$Ylowfreq[d_rep$unit%in%(2*(1:(Nx/2))-1)] = NA
+d_rep$Ylowfreq[d_rep$period%in%(2*(1:(T/2))-1)] = NA
+```
+
+## Visualize
+
+```{r}
+
+panelview(d_rep,
+          Y="X",
+          index=c("unit","period"),
+          type="missing",
+          leave.gap=TRUE)
+
+panelview(d_rep,
+          Y="Ylowfreq",
+          index=c("unit","period"),
+          type="missing",
+          leave.gap=TRUE)
+
+
+```
+
+# PCA on Complete Data
+
+
+## Form into time by unit matrix
+
+```{r}
+
+Xmat = matrix(d_rep$X, nrow = T, ncol = Nx)
+
+```
+
+$X$ specific factor model is 
+$$
+\underbrace{X}_{T \times N_x} = \underbrace{F_x}_{T \times k_x} \underbrace{\Lambda_x'}_{k_x \times N_x} + \underbrace{e_x}_{T \times N_x},
+$$
+where $F_x$ are orthogonal time-specific factors with non-zero unit-specific loadings in $\Lambda_x$.
+
+```{r}
+Xmat_s = scale(Xmat)
+```
+
+
