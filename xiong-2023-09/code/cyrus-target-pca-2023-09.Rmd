@@ -16,8 +16,8 @@ library(panelView)
 
 ```{r}
 Nx = Ny = T = 200
-sigma_x = 16
-sigma_y = 4
+sigma_x = 1
+sigma_y = 1
 
 Ft = rep(1, Ny)%x%mvrnorm(T, c(0,0), diag(2))
 Lamy = mvrnorm(Ny, c(0,0), diag(2))%x%rep(1, Ny)
@@ -34,7 +34,7 @@ ey = rnorm(Ny*T, 0, sigma_y)
 d_rep  = data.frame(period = rep(1, Nx)%x%(1:T),
                     unit = (1:Nx)%x%rep(1, T),
                     X = c(t(Ft%*%t(Lamx))) + ex,
-                    Yinit = c(t(Ft%*%t(Lamy))) + ey)
+                    Y = c(t(Ft%*%t(Lamy))) + ey)
 
 d_rep$Ylowfreq = d_rep$Yinit
 d_rep$Ylowfreq[d_rep$unit%in%(2*(1:(Nx/2))-1)] = NA
@@ -60,7 +60,7 @@ panelview(d_rep,
 
 ```
 
-# PCA on Complete Data
+# Complete Data Case
 
 
 ## Form into time by unit matrix
@@ -68,6 +68,8 @@ panelview(d_rep,
 ```{r}
 
 Xmat = matrix(d_rep$X, nrow = T, ncol = Nx)
+Ymat = matrix(d_rep$Y, nrow = T, ncol = Ny)
+
 
 ```
 
@@ -77,8 +79,25 @@ $$
 $$
 where $F_x$ are orthogonal time-specific factors with non-zero unit-specific loadings in $\Lambda_x$.
 
+Similar for $Y$.
+
+## Construct the $Z^{(\gamma)}$ matrix with $gamma = 1$
+
 ```{r}
-Xmat_s = scale(Xmat)
+pargamma = 1
+Zmat = cbind(Xmat, pargamma*Ymat)
+ZTZ = t(Zmat)%*%Zmat
+pca_Z = prcomp(ZTZ, center = TRUE, scale = TRUE)
+
+summary(pca_Z)
+pca_Z$rotation
+
+
+
+
 ```
+
+
+
 
 
